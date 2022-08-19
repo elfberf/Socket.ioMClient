@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html>
+<head>
+
+    <meta charset="utf-8"/>
+
+    <title>Demo Chat</title>
+
+    <link href="bootstrap.css" rel="stylesheet">
+
+    <style>
+        body {
+            padding: 20px;
+        }
+
+        #console {
+            height: 400px;
+            overflow: auto;
+        }
+
+        .username-msg {
+            color: orange;
+        }
+
+        .connect-msg {
+            color: green;
+        }
+
+        .disconnect-msg {
+            color: red;
+        }
+
+        .send-msg {
+            color: #888
+        }
+    </style>
+
+
+    <script src="js/socket.io/socket.io.js"></script>
+    <script src="js/moment.min.js"></script>
+    <script src="js/jquery-1.10.1.min.js"></script>
+
+    <script>
+        room = 'digerleri';
+
+        var userName = 'user' + Math.floor((Math.random() * 1000) + 1);
+
+        var socket = io.connect('http://localhost:9092');
+
+        socket.on('connect', function () {
+            output('<span class="connect-msg">Client has connected to the server!</span>');
+            _defaultRoom();
+        });
+
+        socket.on('chatevent', function (data) {
+            //Aynı roomdaysa mesaj at
+            /*console.log(`data : ` + data['room']);
+            console.log(`room : ` + room);
+            if(data['room']==room){
+            output('<span class="username-msg">' + data.userName + ':</span> ' + data.message);
+            }*/
+            output('<span class="username-msg">' + data.userName + ':</span> ' + data.message);
+
+        });
+
+        socket.on('disconnect', function () {
+            output('<span class="disconnect-msg">The client has disconnected!</span>');
+        });
+
+        function sendDisconnect() {
+            socket.disconnect();
+        }
+
+        function sendMessage() {
+            var message = $('#msg').val();
+            $('#msg').val('');
+
+            var jsonObject = {
+                userName: userName,
+                room: room,
+                message: message
+            };
+            socket.emit('chatevent', jsonObject);
+        }
+
+
+        function output(message) {
+            var currentTime = "<span class='time'>" + moment().format('HH:mm:ss.SSS') + "</span>";
+            var element = $("<div>" + currentTime + " " + message + "</div>");
+            $('#console').prepend(element);
+        }
+
+        $(document).keydown(function (e) {
+            if (e.keyCode == 13) {
+                $('#send').click();
+            }
+        });
+
+        /**
+         * Oda değiştiğinde yapılacak olan tüm işlemler bu metodun içinde olacak
+         */
+        function onRoomChange()
+        {
+            $('h1#title').text(userName + " => Group: " + room);
+            $('head title').text("Group: " + room);
+
+            var roomChange = {
+                userName: userName,
+                room: room,
+            };
+            socket.emit('roomChange', roomChange);
+
+        }
+
+        function _defaultRoom()
+        {
+            room = 'digerleri';
+            onRoomChange();
+        }
+    </script>
+</head>
+
+<body>
+
+<h1 id="title">Netty-socketio</h1>
+<div>
+    <a href="#digerleri" onclick="room = 'digerleri'; onRoomChange()">digerleri</a> |
+    <a href="#stajyerler" onclick="room = 'stajyerler'; onRoomChange()">stajyerler</a>
+</div>
+<br/>
+
+<div id="console" class="well">
+</div>
+<form class="well form-inline" onsubmit="return false;">
+    <input id="msg" class="input-xlarge" type="text" placeholder="Type something..."/>
+    <button type="button" onClick="sendMessage()" class="btn" id="send">Send</button>
+
+    <button type="button" onClick="sendDisconnect()" class="btn">Disconnect</button>
+</form>
+
+<script type="application/javascript">
+    $(function()
+    {
+        onRoomChange();
+    });
+</script>
+
+</body>
+
+</html>
